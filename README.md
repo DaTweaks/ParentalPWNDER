@@ -1,4 +1,4 @@
-# ParentalPWNDER
+# ParentalPWNER
 Spoofer for Parental controls.
 
 This makes it so when you lose internet you connect as if you were a new person.
