@@ -32,7 +32,6 @@ class Program
     const double DownloadThresholdMbps = 1; // Mb/s
     static async Task Main()
     {
-        AddToStartup();
         while (true)
         {
             Console.WriteLine("nbg1-speed.hetzner.com...");
@@ -223,32 +222,6 @@ class Program
     #endregion
 
     #region Utils
-
-    /// <summary>
-    /// Adds this program to startup folder so it runs on login.
-    /// </summary>
-    static void AddToStartup()
-    {
-        string exePath = Assembly.GetExecutingAssembly().Location;
-        string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup) + @"\ReconStartup.lnk";
-
-        if (!System.IO.File.Exists(shortcutPath))
-        {
-            WshShell shell = new WshShell();
-            IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
-            shortcut.TargetPath = exePath;
-            shortcut.WorkingDirectory = System.IO.Path.GetDirectoryName(exePath);
-            shortcut.WindowStyle = 1;
-            shortcut.Description = "Recon Identity Reset Tool";
-            shortcut.Save();
-
-            Console.WriteLine("Added to startup.");
-        }
-        else
-        {
-            Console.WriteLine("Already exists in startup.");
-        }
-    }
 
     /// <summary>
     /// Generates a random mac adress
