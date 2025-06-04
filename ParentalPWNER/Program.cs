@@ -30,45 +30,55 @@ using System.Reflection;
 class Program
 {
     const double DownloadThresholdMbps = 1; // Mb/s
+
+    static bool spoofname = true;
+    static bool checkforbandwidth = true;
     static async Task Main()
     {
+        Console.WriteLine("Do you want to spoof your name aswell?");
+
+        var response = Console.ReadLine().ToUpper();
+
+        spoofname = response.Contains("Y");
+
+        if (spoofname)
+        {
+            Console.WriteLine("Spoofing name.");
+        }
+        else
+        {
+            Console.WriteLine("Not spoofing name.");
+        }
+
+        Console.WriteLine("Do you want to check for bandwidth aswell?");
+
+        response = Console.ReadLine().ToUpper();
+
+        checkforbandwidth = response.Contains("Y");
+
+        if (checkforbandwidth)
+        {
+            Console.WriteLine("Checking For Bandwith.");
+        }
+        else
+        {
+            Console.WriteLine("NOT Checking For Bandwith.");
+        }
+
         while (true)
         {
-            Console.WriteLine("nbg1-speed.hetzner.com...");
-            bool pingOK = PingHost("nbg1-speed.hetzner.com");
-
-            if (!pingOK)
+            if (await CheckConnection())
             {
-                Console.WriteLine("Ping failed.");
+                await ConnectionGood();
             }
             else
             {
-                Console.WriteLine("Ping OK. Testing speed...");
-                string url = "http://ipv4.download.thinkbroadband.com/1MB.zip";
-                double speed = await MeasureDownloadSpeedMbps(url);
-                Console.WriteLine($"Speed Download: {speed:F2} Mbps");
+                Console.WriteLine("Triggering identity change.");
+                BecomeNewComputer();
+                Console.WriteLine("Waiting 10 seconds before retrying...");
 
-                if (speed >= DownloadThresholdMbps)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Connection is good.");
-                    Console.ForegroundColor = ConsoleColor.White;
-                    await Task.Delay(5000);
-                    Console.Clear();
-                    continue;
-                }
-
-                Console.WriteLine("Download too slow.");
+                await ConnectionBad();
             }
-
-            Console.WriteLine("Triggering identity change.");
-            BecomeNewComputer(); // MAC + name + flush
-            Console.WriteLine("Waiting 10 seconds before retrying...");
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Connection Failed.");
-            Console.ForegroundColor = ConsoleColor.White;
-            await Task.Delay(10000);
-            Console.Clear();
         }
     }
 
@@ -116,6 +126,30 @@ class Program
         return mbps;
     }
 
+    static async Task<bool> CheckConnection()
+    {
+        Console.WriteLine("nbg1-speed.hetzner.com...");
+        bool pingOK = PingHost("nbg1-speed.hetzner.com");
+
+        if (!pingOK)
+        {
+            Console.WriteLine("Ping failed.");
+            return false;
+        }
+
+        Console.WriteLine("Ping OK.");
+        if (checkforbandwidth)
+        {
+            Console.WriteLine("Testing speed...");
+            string url = "http://ipv4.download.thinkbroadband.com/1MB.zip";
+            double speed = await MeasureDownloadSpeedMbps(url);
+            Console.WriteLine($"Speed Download: {speed:F2} Mbps");
+
+            return speed >= DownloadThresholdMbps;
+        }
+        return true;
+    }
+
     #endregion
 
     #region Spoofing
@@ -127,7 +161,8 @@ class Program
     {
         ChangeMacAddress(); // via registry + disable/enable
         FlushNetworkCaches();
-        ChangeComputerName(); // requires reboot to fully take effect
+        if(spoofname)
+            ChangeComputerName(); // requires reboot to fully take effect
     }
 
     /// <summary>
@@ -234,6 +269,24 @@ class Program
         rand.NextBytes(mac);
         mac[0] = (byte)((mac[0] & 0xFE) | 0x02); // locally administered
         return string.Join("", mac.Select(b => b.ToString("X2")));
+    }
+
+    private static async Task ConnectionGood()
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Connection is good.");
+        Console.ForegroundColor = ConsoleColor.White;
+        await Task.Delay(5000);
+        Console.Clear();
+    }
+
+    private static async Task ConnectionBad()
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Connection Failed.");
+        Console.ForegroundColor = ConsoleColor.White;
+        await Task.Delay(10000);
+        Console.Clear();
     }
 
     #endregion
